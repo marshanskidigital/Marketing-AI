@@ -1,0 +1,1718 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Marketing AI</title>
+    <meta name="description" content="A beautiful dashboard displaying Google Ads campaign performance data." />
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+
+    <style>
+        /* ─── Reset & Base ─────────────────────────────── */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg-primary: #f0f2f5;
+            --bg-secondary: #e8eaef;
+            --bg-card: #ffffff;
+            --bg-card-hover: #f7f8fc;
+            --border: rgba(0, 0, 0, .08);
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --accent-blue: #3b82f6;
+            --accent-cyan: #0891b2;
+            --accent-green: #059669;
+            --accent-amber: #d97706;
+            --accent-rose: #e11d48;
+            --accent-violet: #7c3aed;
+            --gradient-blue: linear-gradient(135deg, #3b82f6, #0891b2);
+            --gradient-green: linear-gradient(135deg, #059669, #34d399);
+            --gradient-amber: linear-gradient(135deg, #d97706, #fbbf24);
+            --gradient-rose: linear-gradient(135deg, #e11d48, #fb7185);
+            --radius-sm: 8px;
+            --radius-md: 14px;
+            --radius-lg: 20px;
+            --shadow-card: 0 2px 12px rgba(0, 0, 0, .06);
+            --sidebar-width: 72px;
+            --sidebar-expanded: 240px;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ─── Ambient glow blobs ───────────────────────── */
+        body::before,
+        body::after {
+            content: '';
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: .08;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        body::before {
+            width: 600px;
+            height: 600px;
+            background: var(--accent-blue);
+            top: -180px;
+            left: -120px;
+        }
+
+        body::after {
+            width: 500px;
+            height: 500px;
+            background: var(--accent-violet);
+            bottom: -100px;
+            right: -80px;
+        }
+
+        /* ─── App Layout ──────────────────────────────── */
+        .app-layout {
+            display: flex;
+            min-height: 100vh;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ─── Sidebar ─────────────────────────────────── */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+            border-right: 1px solid rgba(255, 255, 255, .06);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 0;
+            z-index: 100;
+            transition: width .3s cubic-bezier(.4, 0, .2, 1);
+            overflow: hidden;
+        }
+
+        .sidebar:hover {
+            width: var(--sidebar-expanded);
+        }
+
+        .sidebar-logo {
+            width: 40px;
+            height: 40px;
+            min-width: 40px;
+            border-radius: 10px;
+            background: var(--gradient-blue);
+            display: grid;
+            place-items: center;
+            font-size: 18px;
+            font-weight: 800;
+            color: #fff;
+            box-shadow: 0 0 24px rgba(59, 130, 246, .3);
+            margin-bottom: 36px;
+            cursor: pointer;
+            transition: transform .2s;
+        }
+
+        .sidebar-logo:hover {
+            transform: scale(1.08);
+        }
+
+        .sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            width: 100%;
+            padding: 0 12px;
+            flex: 1;
+        }
+
+        .sidebar-btn {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 14px;
+            border: none;
+            background: transparent;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all .2s ease;
+            color: rgba(255, 255, 255, .45);
+            text-decoration: none;
+            white-space: nowrap;
+            font-family: 'Inter', sans-serif;
+            font-size: .84rem;
+            font-weight: 500;
+            overflow: hidden;
+        }
+
+        .sidebar-btn:hover {
+            background: rgba(255, 255, 255, .06);
+            color: rgba(255, 255, 255, .8);
+        }
+
+        .sidebar-btn.active {
+            background: rgba(59, 130, 246, .15);
+            color: #fff;
+            box-shadow: inset 0 0 0 1px rgba(59, 130, 246, .25);
+        }
+
+        .sidebar-btn .icon {
+            width: 22px;
+            min-width: 22px;
+            height: 22px;
+            display: grid;
+            place-items: center;
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        .sidebar-btn .label {
+            opacity: 0;
+            transition: opacity .2s ease;
+        }
+
+        .sidebar:hover .sidebar-btn .label {
+            opacity: 1;
+        }
+
+        .sidebar-divider {
+            width: calc(100% - 24px);
+            height: 1px;
+            background: rgba(255, 255, 255, .06);
+            margin: 12px 12px;
+        }
+
+        /* ─── Main Content ────────────────────────────── */
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            transition: margin-left .3s cubic-bezier(.4, 0, .2, 1);
+        }
+
+        /* ─── Page containers ─────────────────────────── */
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        /* ─── Layout ───────────────────────────────────── */
+        .dashboard {
+            position: relative;
+            z-index: 1;
+            max-width: 1360px;
+            margin: 0 auto;
+            padding: 32px 28px 60px;
+        }
+
+        /* ─── Header ───────────────────────────────────── */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 36px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .logo-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: var(--radius-sm);
+            background: var(--gradient-blue);
+            display: grid;
+            place-items: center;
+            font-size: 20px;
+            font-weight: 800;
+            color: #fff;
+            box-shadow: 0 0 20px rgba(59, 130, 246, .25);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -.02em;
+        }
+
+        .header h1 span {
+            color: var(--accent-cyan);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        /* ─── Account Filter ──────────────────────────── */
+        .account-filter {
+            font-family: 'Inter', sans-serif;
+            font-size: .82rem;
+            color: var(--text-primary);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 8px 38px 8px 14px;
+            border-radius: 100px;
+            cursor: pointer;
+            outline: none;
+            transition: border-color .2s;
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2364748b' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 16px center;
+        }
+
+        .account-filter:hover,
+        .account-filter:focus {
+            border-color: var(--accent-cyan);
+        }
+
+        .account-filter option {
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }
+
+        .date-badge {
+            font-size: .82rem;
+            color: var(--text-secondary);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 8px 18px;
+            border-radius: 100px;
+        }
+
+        /* ─── KPI Cards ────────────────────────────────── */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+
+        .kpi-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+            transition: transform .25s, box-shadow .25s;
+            box-shadow: var(--shadow-card);
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, .1);
+        }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+        }
+
+        .kpi-card:nth-child(1)::before {
+            background: var(--gradient-blue);
+        }
+
+        .kpi-card:nth-child(2)::before {
+            background: var(--gradient-green);
+        }
+
+        .kpi-card:nth-child(3)::before {
+            background: var(--gradient-amber);
+        }
+
+        .kpi-card:nth-child(4)::before {
+            background: var(--gradient-rose);
+        }
+
+        .kpi-label {
+            font-size: .78rem;
+            text-transform: uppercase;
+            letter-spacing: .08em;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .kpi-value {
+            font-size: 1.9rem;
+            font-weight: 800;
+            letter-spacing: -.03em;
+        }
+
+        .kpi-sub {
+            font-size: .78rem;
+            font-weight: 500;
+            margin-top: 8px;
+            color: var(--text-secondary);
+        }
+
+        .kpi-sub .live-dot {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            margin-right: 4px;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: .3;
+            }
+        }
+
+        /* ─── Charts row ───────────────────────────────── */
+        .charts-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+
+        @media (max-width: 900px) {
+            .charts-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 24px;
+            box-shadow: var(--shadow-card);
+        }
+
+        .card-title {
+            font-size: .92rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-title .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            width: 100%;
+            height: 300px;
+        }
+
+        .chart-wrapper canvas {
+            width: 100% !important;
+            height: 100% !important;
+        }
+
+        /* ─── Campaign Table ───────────────────────────── */
+        .table-card {
+            overflow: hidden;
+        }
+
+        .table-scroll {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 760px;
+        }
+
+        thead th {
+            text-align: left;
+            font-size: .75rem;
+            text-transform: uppercase;
+            letter-spacing: .07em;
+            color: var(--text-secondary);
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+            cursor: pointer;
+            user-select: none;
+            transition: color .2s;
+        }
+
+        thead th:hover {
+            color: var(--text-primary);
+        }
+
+        thead th .sort-arrow {
+            margin-left: 4px;
+            font-size: .65rem;
+        }
+
+        tbody td {
+            padding: 14px 16px;
+            font-size: .86rem;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+        tbody tr {
+            transition: background .2s;
+        }
+
+        tbody tr:hover {
+            background: var(--bg-card-hover);
+        }
+
+        .campaign-name {
+            font-weight: 600;
+            max-width: 280px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .account-tag {
+            display: block;
+            font-size: .68rem;
+            font-weight: 400;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 3px 12px;
+            border-radius: 100px;
+            font-size: .72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+        }
+
+        .status-badge.enabled {
+            background: rgba(5, 150, 105, .1);
+            color: var(--accent-green);
+        }
+
+        .status-badge.paused {
+            background: rgba(217, 119, 6, .1);
+            color: var(--accent-amber);
+        }
+
+        .status-badge.removed {
+            background: rgba(100, 116, 139, .1);
+            color: var(--text-secondary);
+        }
+
+        .channel-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 100px;
+            font-size: .68rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: .03em;
+            background: rgba(59, 130, 246, .08);
+            color: var(--accent-blue);
+        }
+
+        /* ─── Loading state ────────────────────────────── */
+        .loading-overlay {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 80px 20px;
+            gap: 20px;
+        }
+
+        .spinner {
+            width: 44px;
+            height: 44px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent-cyan);
+            border-radius: 50%;
+            animation: spin .7s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-text {
+            font-size: .88rem;
+            color: var(--text-secondary);
+        }
+
+        .error-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--accent-rose);
+            font-size: .92rem;
+        }
+
+        .error-state .retry-btn {
+            display: inline-block;
+            margin-top: 16px;
+            padding: 10px 24px;
+            background: var(--gradient-blue);
+            color: #fff;
+            border: none;
+            border-radius: 100px;
+            font-family: 'Inter', sans-serif;
+            font-size: .84rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity .2s;
+        }
+
+        .error-state .retry-btn:hover {
+            opacity: .85;
+        }
+
+        /* ─── Fade-in animation ────────────────────────── */
+        .fade-up {
+            opacity: 0;
+            transform: translateY(18px);
+            animation: fadeUp .55s ease forwards;
+        }
+
+        @keyframes fadeUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .delay-1 {
+            animation-delay: .08s;
+        }
+
+        .delay-2 {
+            animation-delay: .16s;
+        }
+
+        .delay-3 {
+            animation-delay: .24s;
+        }
+
+        .delay-4 {
+            animation-delay: .32s;
+        }
+
+        .delay-5 {
+            animation-delay: .40s;
+        }
+
+        .delay-6 {
+            animation-delay: .48s;
+        }
+
+        /* ─── AI Chat Page ─────────────────────────────── */
+        .chat-page {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        .chat-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 28px 0 20px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .chat-avatar {
+            width: 48px;
+            height: 48px;
+            min-width: 48px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, #d97706, #f59e0b);
+            display: grid;
+            place-items: center;
+            font-size: 22px;
+            color: #fff;
+            box-shadow: 0 0 20px rgba(217, 119, 6, .2);
+        }
+
+        .chat-header-info h2 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            letter-spacing: -.01em;
+        }
+
+        .chat-header-info p {
+            font-size: .8rem;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        .chat-header-info .status-online {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .chat-header-info .status-online::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        /* ─── Messages Area ───────────────────────────── */
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 28px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            scroll-behavior: smooth;
+        }
+
+        .chat-messages::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, .1);
+            border-radius: 10px;
+        }
+
+        .msg {
+            display: flex;
+            gap: 12px;
+            max-width: 82%;
+            animation: msgIn .35s ease forwards;
+        }
+
+        @keyframes msgIn {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .msg.user {
+            align-self: flex-end;
+            flex-direction: row-reverse;
+        }
+
+        .msg-avatar {
+            width: 34px;
+            height: 34px;
+            min-width: 34px;
+            border-radius: 10px;
+            display: grid;
+            place-items: center;
+            font-size: 14px;
+            font-weight: 700;
+            color: #fff;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .msg.ai .msg-avatar {
+            background: linear-gradient(135deg, #d97706, #f59e0b);
+        }
+
+        .msg.user .msg-avatar {
+            background: var(--gradient-blue);
+        }
+
+        .msg-bubble {
+            padding: 14px 18px;
+            border-radius: 18px;
+            font-size: .88rem;
+            line-height: 1.65;
+            position: relative;
+        }
+
+        .msg.ai .msg-bubble {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-top-left-radius: 4px;
+            box-shadow: var(--shadow-card);
+            color: var(--text-primary);
+        }
+
+        .msg.user .msg-bubble {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: #fff;
+            border-top-right-radius: 4px;
+            box-shadow: 0 4px 16px rgba(59, 130, 246, .25);
+        }
+
+        .msg-time {
+            font-size: .68rem;
+            color: var(--text-secondary);
+            margin-top: 6px;
+            padding: 0 4px;
+        }
+
+        .msg.user .msg-time {
+            text-align: right;
+        }
+
+        /* ─── AI Response Markdown ─────────────────────── */
+        .msg.ai .msg-bubble p {
+            margin-bottom: 8px;
+        }
+
+        .msg.ai .msg-bubble p:last-child {
+            margin-bottom: 0;
+        }
+
+        .msg.ai .msg-bubble strong {
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .msg.ai .msg-bubble em {
+            font-style: italic;
+        }
+
+        .msg.ai .msg-bubble code {
+            background: rgba(0, 0, 0, .06);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: .82rem;
+            font-family: 'Courier New', monospace;
+        }
+
+        .msg.ai .msg-bubble pre {
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 16px;
+            border-radius: 10px;
+            overflow-x: auto;
+            margin: 10px 0;
+            font-size: .8rem;
+            line-height: 1.5;
+        }
+
+        .msg.ai .msg-bubble pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+            font-size: inherit;
+        }
+
+        .msg.ai .msg-bubble ul,
+        .msg.ai .msg-bubble ol {
+            padding-left: 20px;
+            margin: 8px 0;
+        }
+
+        .msg.ai .msg-bubble li {
+            margin-bottom: 4px;
+        }
+
+        /* ─── Typing Indicator ────────────────────────── */
+        .typing-indicator {
+            display: none;
+            align-self: flex-start;
+            gap: 12px;
+            max-width: 82%;
+        }
+
+        .typing-indicator.visible {
+            display: flex;
+        }
+
+        .typing-dots {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 16px 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 18px;
+            border-top-left-radius: 4px;
+            box-shadow: var(--shadow-card);
+        }
+
+        .typing-dots span {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--text-secondary);
+            animation: typingBounce 1.2s ease-in-out infinite;
+        }
+
+        .typing-dots span:nth-child(2) {
+            animation-delay: .15s;
+        }
+
+        .typing-dots span:nth-child(3) {
+            animation-delay: .3s;
+        }
+
+        @keyframes typingBounce {
+
+            0%,
+            60%,
+            100% {
+                transform: translateY(0);
+                opacity: .4;
+            }
+
+            30% {
+                transform: translateY(-6px);
+                opacity: 1;
+            }
+        }
+
+        /* ─── Chat Input ──────────────────────────────── */
+        .chat-input-area {
+            flex-shrink: 0;
+            padding: 16px 0 28px;
+            border-top: 1px solid var(--border);
+        }
+
+        .chat-input-wrapper {
+            display: flex;
+            align-items: flex-end;
+            gap: 12px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 8px 8px 8px 20px;
+            box-shadow: var(--shadow-card);
+            transition: border-color .2s, box-shadow .2s;
+        }
+
+        .chat-input-wrapper:focus-within {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, .08), var(--shadow-card);
+        }
+
+        .chat-input {
+            flex: 1;
+            border: none;
+            outline: none;
+            font-family: 'Inter', sans-serif;
+            font-size: .88rem;
+            color: var(--text-primary);
+            background: transparent;
+            resize: none;
+            max-height: 140px;
+            line-height: 1.5;
+            padding: 8px 0;
+        }
+
+        .chat-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .chat-send-btn {
+            width: 42px;
+            height: 42px;
+            min-width: 42px;
+            border: none;
+            border-radius: 12px;
+            background: var(--gradient-blue);
+            color: #fff;
+            cursor: pointer;
+            display: grid;
+            place-items: center;
+            font-size: 18px;
+            transition: transform .15s, opacity .15s;
+            box-shadow: 0 2px 10px rgba(59, 130, 246, .25);
+        }
+
+        .chat-send-btn:hover {
+            transform: scale(1.06);
+        }
+
+        .chat-send-btn:active {
+            transform: scale(.95);
+        }
+
+        .chat-send-btn:disabled {
+            opacity: .5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .chat-hint {
+            font-size: .72rem;
+            color: var(--text-secondary);
+            margin-top: 8px;
+            text-align: center;
+        }
+
+        /* ─── Welcome Message ─────────────────────────── */
+        .chat-welcome {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            gap: 16px;
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .chat-welcome-icon {
+            width: 72px;
+            height: 72px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #d97706, #f59e0b);
+            display: grid;
+            place-items: center;
+            font-size: 34px;
+            color: #fff;
+            box-shadow: 0 8px 32px rgba(217, 119, 6, .2);
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-8px);
+            }
+        }
+
+        .chat-welcome h3 {
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .chat-welcome p {
+            font-size: .88rem;
+            color: var(--text-secondary);
+            max-width: 420px;
+            line-height: 1.6;
+        }
+
+        .chat-suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 8px;
+        }
+
+        .chat-suggestion-btn {
+            padding: 8px 16px;
+            border: 1px solid var(--border);
+            background: var(--bg-card);
+            border-radius: 100px;
+            font-family: 'Inter', sans-serif;
+            font-size: .78rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all .2s;
+        }
+
+        .chat-suggestion-btn:hover {
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
+            background: rgba(59, 130, 246, .04);
+        }
+
+        /* ─── Responsive ──────────────────────────────── */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 56px;
+            }
+
+            .sidebar:hover {
+                width: 56px;
+            }
+
+            .sidebar-btn .label {
+                display: none;
+            }
+
+            .main-content {
+                margin-left: 56px;
+            }
+
+            .chat-page {
+                padding: 0 14px;
+            }
+
+            .msg {
+                max-width: 92%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="app-layout">
+
+        <!-- ─── Sidebar ─────────────────────────────── -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-logo" onclick="switchPage('dashboard')">M</div>
+
+            <nav class="sidebar-nav">
+                <button class="sidebar-btn active" id="nav-dashboard" onclick="switchPage('dashboard')">
+                    <span class="icon">📊</span>
+                    <span class="label">Dashboard</span>
+                </button>
+                <button class="sidebar-btn" id="nav-ai-chat" onclick="switchPage('ai-chat')">
+                    <span class="icon">🤖</span>
+                    <span class="label">AI Chat</span>
+                </button>
+            </nav>
+        </aside>
+
+        <!-- ─── Main Content ────────────────────────── -->
+        <div class="main-content">
+
+            <!-- ═══ Dashboard Page ═══════════════════ -->
+            <div class="page active" id="page-dashboard">
+                <div class="dashboard">
+
+                    <!-- Header -->
+                    <header class="header fade-up">
+                        <div class="header-left">
+                            <div class="logo-icon">M</div>
+                            <h1>Marketing <span>AI</span></h1>
+                        </div>
+                        <div class="header-right">
+                            <select class="account-filter" id="accountFilter">
+                                <option value="all">All Accounts</option>
+                            </select>
+                            <div class="date-badge" id="dateRange">Loading…</div>
+                        </div>
+                    </header>
+
+                    <!-- KPI Cards -->
+                    <section class="kpi-grid" id="kpiGrid"></section>
+
+                    <!-- Charts -->
+                    <section class="charts-row">
+                        <div class="card fade-up delay-5">
+                            <div class="card-title"><span class="dot" style="background:var(--accent-cyan)"></span>
+                                Spend by Account
+                            </div>
+                            <div class="chart-wrapper"><canvas id="barChart"></canvas></div>
+                        </div>
+                        <div class="card fade-up delay-6">
+                            <div class="card-title"><span class="dot" style="background:var(--accent-violet)"></span>
+                                Spend by
+                                Campaign</div>
+                            <div class="chart-wrapper"><canvas id="doughnutChart"></canvas></div>
+                        </div>
+                    </section>
+
+                    <!-- Campaign Table -->
+                    <div class="card table-card fade-up delay-6">
+                        <div class="card-title"><span class="dot" style="background:var(--accent-green)"></span>
+                            Campaign
+                            Performance</div>
+                        <div class="table-scroll">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th data-sort="campaign_name">Campaign <span class="sort-arrow"></span></th>
+                                        <th data-sort="campaign_status">Status <span class="sort-arrow"></span></th>
+                                        <th data-sort="channel_type">Channel <span class="sort-arrow"></span></th>
+                                        <th data-sort="cost">Spend <span class="sort-arrow"></span></th>
+                                        <th data-sort="impressions">Impressions <span class="sort-arrow"></span></th>
+                                        <th data-sort="clicks">Clicks <span class="sort-arrow"></span></th>
+                                        <th data-sort="ctr">CTR <span class="sort-arrow"></span></th>
+                                        <th data-sort="cpc">CPC <span class="sort-arrow"></span></th>
+                                        <th data-sort="conversions">Conversions <span class="sort-arrow"></span></th>
+                                        <th data-sort="costConv">Cost / Conv <span class="sort-arrow"></span></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="campaignBody">
+                                    <tr>
+                                        <td colspan="10">
+                                            <div class="loading-overlay">
+                                                <div class="spinner"></div>
+                                                <div class="loading-text">Fetching campaign data…</div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- ═══ AI Chat Page ═════════════════════ -->
+            <div class="page" id="page-ai-chat">
+                <div class="chat-page">
+
+                    <!-- Chat Header -->
+                    <div class="chat-header fade-up">
+                        <div class="chat-avatar">🤖</div>
+                        <div class="chat-header-info">
+                            <h2>Claude AI Assistant</h2>
+                            <p><span class="status-online">Online</span> · Marketing strategy & insights</p>
+                        </div>
+                    </div>
+
+                    <!-- Messages -->
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="chat-welcome" id="chatWelcome">
+                            <div class="chat-welcome-icon">🤖</div>
+                            <h3>Chat with Claude AI</h3>
+                            <p>Ask me anything about your marketing campaigns, ad strategy, performance analysis, or
+                                growth ideas. I'm here to help!</p>
+                            <div class="chat-suggestions">
+                                <button class="chat-suggestion-btn"
+                                    onclick="useSuggestion('Analyze my ad performance')">📈 Analyze my ad
+                                    performance</button>
+                                <button class="chat-suggestion-btn"
+                                    onclick="useSuggestion('Suggest budget optimization strategies')">💰 Budget
+                                    optimization</button>
+                                <button class="chat-suggestion-btn"
+                                    onclick="useSuggestion('Write me a compelling ad copy for a lead generation campaign')">✍️
+                                    Write ad copy</button>
+                                <button class="chat-suggestion-btn"
+                                    onclick="useSuggestion('What are the best practices for Google Ads in 2026?')">🚀
+                                    Best practices</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Typing Indicator -->
+                    <div class="typing-indicator" id="typingIndicator">
+                        <div class="msg-avatar" style="background: linear-gradient(135deg, #d97706, #f59e0b);">🤖
+                        </div>
+                        <div class="typing-dots">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+
+                    <!-- Input Area -->
+                    <div class="chat-input-area">
+                        <div class="chat-input-wrapper">
+                            <textarea class="chat-input" id="chatInput" rows="1"
+                                placeholder="Ask Claude anything about marketing…"
+                                onkeydown="handleChatKeydown(event)"></textarea>
+                            <button class="chat-send-btn" id="chatSendBtn" onclick="sendChatMessage()">
+                                ➤
+                            </button>
+                        </div>
+                        <div class="chat-hint">Press Enter to send · Shift + Enter for new line</div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        /* ───── Config ────────────────────────────────────── */
+        const API_BASE = 'https://google-ads-api-44988665320.me-west1.run.app';
+
+        /* ───── State ─────────────────────────────────────── */
+        let allRows = [];
+        let activeCampaigns = [];
+        let currentAccount = 'all';
+        let sortKey = 'cost';
+        let sortDir = -1; // -1 = desc
+        let barChartInstance = null;
+        let doughnutChartInstance = null;
+
+        // Chat state
+        let chatHistory = [];
+        let isSending = false;
+
+        /* ───── Page Switching ────────────────────────────── */
+        function switchPage(page) {
+            // Hide all pages
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            // Deactivate all nav buttons
+            document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.remove('active'));
+
+            // Show selected page & activate nav button
+            document.getElementById(`page-${page}`).classList.add('active');
+            document.getElementById(`nav-${page}`).classList.add('active');
+        }
+
+        /* ───── Helpers ───────────────────────────────────── */
+        const fmt = n => n.toLocaleString('en-US');
+        const fmtC = n => '₪' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const statusClass = s => s === 'ENABLED' ? 'enabled' : s === 'PAUSED' ? 'paused' : 'removed';
+
+        /* ───── Fetch data ────────────────────────────────── */
+        async function fetchData() {
+            try {
+                const res = await fetch(`${API_BASE}/campaigns`);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+
+                allRows = data.rows || [];
+                activeCampaigns = allRows.filter(r => r.cost > 0);
+
+                // Populate account filter
+                const accounts = [...new Set(allRows.map(r => r.customer_name))].sort();
+                const select = document.getElementById('accountFilter');
+                accounts.forEach(name => {
+                    const opt = document.createElement('option');
+                    opt.value = name;
+                    opt.textContent = name;
+                    select.appendChild(opt);
+                });
+
+                // Set date badge
+                document.getElementById('dateRange').textContent =
+                    `${data.accounts_count} accounts · ${data.row_count} campaigns`;
+
+                render();
+            } catch (err) {
+                console.error('Failed to fetch:', err);
+                showError(err.message);
+            }
+        }
+
+        function showError(msg) {
+            document.getElementById('kpiGrid').innerHTML = '';
+            document.getElementById('campaignBody').innerHTML = `
+    <tr><td colspan="10">
+      <div class="error-state">
+        <div>⚠️ Failed to load data: ${msg}</div>
+        <button class="retry-btn" onclick="location.reload()">Retry</button>
+      </div>
+    </td></tr>`;
+        }
+
+        /* ───── Render everything ─────────────────────────── */
+        function render() {
+            const filtered = currentAccount === 'all'
+                ? activeCampaigns
+                : activeCampaigns.filter(r => r.customer_name === currentAccount);
+
+            renderKPIs(filtered);
+            renderTable(filtered);
+            renderBarChart();
+            renderDoughnutChart(filtered);
+        }
+
+        /* ───── KPI Cards ─────────────────────────────────── */
+        function renderKPIs(rows) {
+            const totalSpend = rows.reduce((s, r) => s + r.cost, 0);
+            const totalClicks = rows.reduce((s, r) => s + r.clicks, 0);
+            const totalConv = rows.reduce((s, r) => s + r.conversions, 0);
+            const avgCpc = totalClicks > 0 ? totalSpend / totalClicks : 0;
+
+            const kpis = [
+                { label: 'Total Spend', value: fmtC(totalSpend) },
+                { label: 'Total Clicks', value: fmt(totalClicks) },
+                { label: 'Conversions', value: totalConv.toFixed(1) },
+                { label: 'Avg. CPC', value: fmtC(avgCpc) },
+            ];
+
+            const grid = document.getElementById('kpiGrid');
+            grid.innerHTML = '';
+            kpis.forEach((k, i) => {
+                grid.innerHTML += `
+      <div class="kpi-card fade-up delay-${i + 1}">
+        <div class="kpi-label">${k.label}</div>
+        <div class="kpi-value">${k.value}</div>
+        <div class="kpi-sub"><span class="live-dot"></span> Live data</div>
+      </div>`;
+            });
+        }
+
+        /* ───── Campaign Table ────────────────────────────── */
+        function renderTable(rows) {
+            const enriched = rows.map(r => ({
+                ...r,
+                ctr: r.impressions > 0 ? (r.clicks / r.impressions) * 100 : 0,
+                cpc: r.clicks > 0 ? r.cost / r.clicks : 0,
+                costConv: r.conversions > 0 ? r.cost / r.conversions : 0,
+            }));
+
+            enriched.sort((a, b) => {
+                let va = a[sortKey], vb = b[sortKey];
+                if (typeof va === 'string') { va = va.toLowerCase(); vb = vb.toLowerCase(); }
+                if (va < vb) return -1 * sortDir;
+                if (va > vb) return 1 * sortDir;
+                return 0;
+            });
+
+            document.querySelectorAll('thead th').forEach(th => {
+                const arrow = th.querySelector('.sort-arrow');
+                if (!arrow) return;
+                if (th.dataset.sort === sortKey) {
+                    arrow.textContent = sortDir === -1 ? ' ▼' : ' ▲';
+                } else {
+                    arrow.textContent = '';
+                }
+            });
+
+            const tbody = document.getElementById('campaignBody');
+            if (enriched.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--text-secondary)">No campaigns with spend found for this filter.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = enriched.map(c => `
+    <tr>
+      <td class="campaign-name">${c.campaign_name}<span class="account-tag">${c.customer_name}</span></td>
+      <td><span class="status-badge ${statusClass(c.campaign_status)}">${c.campaign_status.toLowerCase()}</span></td>
+      <td><span class="channel-badge">${c.channel_type.replace(/_/g, ' ')}</span></td>
+      <td>${fmtC(c.cost)}</td>
+      <td>${fmt(c.impressions)}</td>
+      <td>${fmt(c.clicks)}</td>
+      <td>${c.ctr.toFixed(2)}%</td>
+      <td>${fmtC(c.cpc)}</td>
+      <td>${c.conversions.toFixed(1)}</td>
+      <td>${c.conversions > 0 ? fmtC(c.costConv) : '—'}</td>
+    </tr>`).join('');
+        }
+
+        /* ───── Bar Chart: Spend by Account ───────────────── */
+        function renderBarChart() {
+            const accountSpend = {};
+            const accountClicks = {};
+            const accountConv = {};
+            activeCampaigns.forEach(r => {
+                accountSpend[r.customer_name] = (accountSpend[r.customer_name] || 0) + r.cost;
+                accountClicks[r.customer_name] = (accountClicks[r.customer_name] || 0) + r.clicks;
+                accountConv[r.customer_name] = (accountConv[r.customer_name] || 0) + r.conversions;
+            });
+
+            const labels = Object.keys(accountSpend).sort();
+            const spendData = labels.map(l => accountSpend[l]);
+            const clickData = labels.map(l => accountClicks[l]);
+            const convData = labels.map(l => accountConv[l]);
+
+            const ctx = document.getElementById('barChart').getContext('2d');
+
+            if (barChartInstance) barChartInstance.destroy();
+
+            barChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [
+                        {
+                            label: 'Spend (₪)',
+                            data: spendData,
+                            backgroundColor: ['#3b82f6', '#06b6d4', '#10b981', '#f59e0b', '#f43f5e', '#8b5cf6'],
+                            borderRadius: 8,
+                            barPercentage: .5,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Clicks',
+                            data: clickData,
+                            backgroundColor: 'rgba(139,92,246,.35)',
+                            borderColor: '#8b5cf6',
+                            borderWidth: 2,
+                            borderRadius: 8,
+                            barPercentage: .5,
+                            yAxisID: 'y1'
+                        },
+                        {
+                            label: 'Conversions',
+                            data: convData,
+                            backgroundColor: 'rgba(16,185,129,.35)',
+                            borderColor: '#10b981',
+                            borderWidth: 2,
+                            borderRadius: 8,
+                            barPercentage: .5,
+                            yAxisID: 'y2'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { labels: { color: '#64748b', font: { family: 'Inter', size: 12 }, boxWidth: 12, padding: 20 } },
+                        tooltip: { backgroundColor: '#ffffff', titleColor: '#1e293b', bodyColor: '#475569', borderColor: 'rgba(0,0,0,.08)', borderWidth: 1, padding: 12, cornerRadius: 10 }
+                    },
+                    scales: {
+                        x: { grid: { color: 'rgba(0,0,0,.04)' }, ticks: { color: '#64748b', font: { size: 11 } } },
+                        y: { position: 'left', grid: { color: 'rgba(0,0,0,.04)' }, ticks: { color: '#64748b', font: { size: 11 }, callback: v => '₪' + v.toLocaleString() } },
+                        y1: { position: 'right', grid: { drawOnChartArea: false }, ticks: { color: '#64748b', font: { size: 11 } } },
+                        y2: { position: 'right', grid: { drawOnChartArea: false }, ticks: { color: '#64748b', font: { size: 11 } }, side: 'right' }
+                    },
+                    animation: { duration: 1000, easing: 'easeOutQuart' }
+                }
+            });
+        }
+
+        /* ───── Doughnut Chart: Spend by Campaign ─────────── */
+        function renderDoughnutChart(rows) {
+            const sorted = [...rows].sort((a, b) => b.cost - a.cost);
+            const top = sorted.slice(0, 8);
+            const otherCost = sorted.slice(8).reduce((s, r) => s + r.cost, 0);
+
+            const labels = top.map(r => r.campaign_name.length > 28 ? r.campaign_name.slice(0, 26) + '…' : r.campaign_name);
+            const data = top.map(r => r.cost);
+            if (otherCost > 0) { labels.push('Other'); data.push(otherCost); }
+
+            const palette = ['#3b82f6', '#06b6d4', '#10b981', '#f59e0b', '#f43f5e', '#8b5cf6', '#ec4899', '#14b8a6', '#64748b'];
+
+            const ctx = document.getElementById('doughnutChart').getContext('2d');
+            if (doughnutChartInstance) doughnutChartInstance.destroy();
+
+            doughnutChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels,
+                    datasets: [{ data, backgroundColor: palette, borderColor: '#ffffff', borderWidth: 3, hoverOffset: 8 }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    cutout: '68%',
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: '#64748b', font: { family: 'Inter', size: 10 }, padding: 10, boxWidth: 10 } },
+                        tooltip: {
+                            backgroundColor: '#ffffff', titleColor: '#1e293b', bodyColor: '#475569',
+                            borderColor: 'rgba(0,0,0,.08)', borderWidth: 1, padding: 12, cornerRadius: 10,
+                            callbacks: { label: ctx => ` ${ctx.label}: ${fmtC(ctx.parsed)}` }
+                        }
+                    },
+                    animation: { animateRotate: true, duration: 1200, easing: 'easeOutQuart' }
+                }
+            });
+        }
+
+        /* ───── Event: Account filter ─────────────────────── */
+        document.getElementById('accountFilter').addEventListener('change', (e) => {
+            currentAccount = e.target.value;
+            render();
+        });
+
+        /* ───── Event: Table sort ─────────────────────────── */
+        document.querySelectorAll('thead th[data-sort]').forEach(th => {
+            th.addEventListener('click', () => {
+                const key = th.dataset.sort;
+                if (sortKey === key) {
+                    sortDir *= -1;
+                } else {
+                    sortKey = key;
+                    sortDir = -1;
+                }
+                const filtered = currentAccount === 'all'
+                    ? activeCampaigns
+                    : activeCampaigns.filter(r => r.customer_name === currentAccount);
+                renderTable(filtered);
+            });
+        });
+
+        /* ═══════════════════════════════════════════════════
+           AI CHAT FUNCTIONALITY
+           ═══════════════════════════════════════════════════ */
+
+        function getTimeString() {
+            return new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        /* ── Simple Markdown → HTML ───────────────────────── */
+        function renderMarkdown(text) {
+            // Code blocks
+            text = text.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
+                return `<pre><code>${escapeHtml(code.trim())}</code></pre>`;
+            });
+            // Inline code
+            text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+            // Bold
+            text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            // Italic
+            text = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
+            // Unordered lists
+            text = text.replace(/^[-*] (.+)$/gm, '<li>$1</li>');
+            text = text.replace(/(<li>[\s\S]*?<\/li>)/g, '<ul>$1</ul>');
+            // Fix nested ul
+            text = text.replace(/<\/ul>\s*<ul>/g, '');
+            // Ordered lists
+            text = text.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
+            // Line breaks → paragraphs
+            text = text.replace(/\n\n/g, '</p><p>');
+            text = text.replace(/\n/g, '<br>');
+            if (!text.startsWith('<')) text = '<p>' + text + '</p>';
+            return text;
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+
+        /* ── Add message to chat ──────────────────────────── */
+        function addMessage(role, content) {
+            const welcome = document.getElementById('chatWelcome');
+            if (welcome) welcome.remove();
+
+            const messages = document.getElementById('chatMessages');
+            const isUser = role === 'user';
+            const time = getTimeString();
+
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `msg ${isUser ? 'user' : 'ai'}`;
+
+            const avatarContent = isUser ? '👤' : '🤖';
+            const bubbleContent = isUser ? escapeHtml(content) : renderMarkdown(content);
+
+            msgDiv.innerHTML = `
+                <div class="msg-avatar">${avatarContent}</div>
+                <div>
+                    <div class="msg-bubble">${bubbleContent}</div>
+                    <div class="msg-time">${time}</div>
+                </div>
+            `;
+
+            messages.appendChild(msgDiv);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        /* ── Typing indicator ─────────────────────────────── */
+        function showTyping(show) {
+            const indicator = document.getElementById('typingIndicator');
+            if (show) {
+                indicator.classList.add('visible');
+                document.getElementById('chatMessages').scrollTop =
+                    document.getElementById('chatMessages').scrollHeight;
+            } else {
+                indicator.classList.remove('visible');
+            }
+        }
+
+        /* ── Send message ─────────────────────────────────── */
+        async function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            if (!message || isSending) return;
+
+            isSending = true;
+            const sendBtn = document.getElementById('chatSendBtn');
+            sendBtn.disabled = true;
+
+            // Show user message
+            addMessage('user', message);
+            chatHistory.push({ role: 'user', content: message });
+            input.value = '';
+            input.style.height = 'auto';
+
+            // Show typing indicator
+            showTyping(true);
+
+            try {
+                const res = await fetch(`${API_BASE}/ai-chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message, history: chatHistory })
+                });
+
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+
+                showTyping(false);
+
+                const reply = data.response || data.reply || data.message || 'No response received.';
+                addMessage('ai', reply);
+                chatHistory.push({ role: 'assistant', content: reply });
+
+            } catch (err) {
+                showTyping(false);
+                addMessage('ai', `⚠️ **Error:** Could not reach the AI service. ${err.message}`);
+            }
+
+            isSending = false;
+            sendBtn.disabled = false;
+            input.focus();
+        }
+
+        /* ── Keyboard handling ────────────────────────────── */
+        function handleChatKeydown(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendChatMessage();
+            }
+        }
+
+        /* ── Auto-grow textarea ───────────────────────────── */
+        document.getElementById('chatInput').addEventListener('input', function () {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 140) + 'px';
+        });
+
+        /* ── Suggestion buttons ───────────────────────────── */
+        function useSuggestion(text) {
+            document.getElementById('chatInput').value = text;
+            sendChatMessage();
+        }
+
+        /* ───── Init ──────────────────────────────────────── */
+        fetchData();
+    </script>
+
+</body>
+
+</html>
