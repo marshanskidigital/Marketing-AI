@@ -692,7 +692,6 @@
             align-items: center;
             gap: 16px;
             padding: 28px 0 20px;
-            border-bottom: 1px solid var(--border);
             flex-shrink: 0;
         }
 
@@ -741,7 +740,6 @@
             display: flex;
             gap: 8px;
             padding: 0 0 16px 0;
-            border-bottom: 1px solid var(--border);
             flex-shrink: 0;
             overflow-x: auto;
         }
@@ -993,7 +991,6 @@
         .chat-input-area {
             flex-shrink: 0;
             padding: 16px 0 28px;
-            border-top: 1px solid var(--border);
         }
 
         .chat-input-wrapper {
@@ -1296,22 +1293,21 @@
                     <div class="chat-messages" id="chatMessages">
                         <div class="chat-welcome" id="chatWelcome">
                             <div class="chat-welcome-icon">🤖</div>
-                            <h3>Chat with Claude AI</h3>
-                            <p>Ask me anything about your marketing campaigns, ad strategy, performance analysis, or
-                                growth ideas. I'm here to help!</p>
+                            <h3>צ'אט עם Claude AI</h3>
+                            <p>שאלו אותי כל דבר על קמפיינים שיווקיים, אסטרטגיית פרסום, ניתוח ביצועים או רעיונות לצמיחה.
+                                אני כאן לעזור!</p>
                             <div class="chat-suggestions">
                                 <button class="chat-suggestion-btn"
-                                    onclick="useSuggestion('Analyze my ad performance')">📈 Analyze my ad
-                                    performance</button>
+                                    onclick="useSuggestion('נתח את ביצועי הפרסום שלי')">📈 ניתוח ביצועי פרסום</button>
                                 <button class="chat-suggestion-btn"
-                                    onclick="useSuggestion('Suggest budget optimization strategies')">💰 Budget
-                                    optimization</button>
+                                    onclick="useSuggestion('הצע אסטרטגיות לאופטימיזציה של תקציב')">💰 אופטימיזציית
+                                    תקציב</button>
                                 <button class="chat-suggestion-btn"
-                                    onclick="useSuggestion('Write me a compelling ad copy for a lead generation campaign')">✍️
-                                    Write ad copy</button>
+                                    onclick="useSuggestion('כתוב לי קופי פרסומי משכנע לקמפיין לידים')">✍️ כתיבת
+                                    קופי</button>
                                 <button class="chat-suggestion-btn"
-                                    onclick="useSuggestion('What are the best practices for Google Ads in 2026?')">🚀
-                                    Best practices</button>
+                                    onclick="useSuggestion('מהן שיטות העבודה המומלצות בגוגל אדס ב-2026?')">🚀 שיטות
+                                    מומלצות</button>
                             </div>
                         </div>
                     </div>
@@ -1331,13 +1327,13 @@
                     <div class="chat-input-area">
                         <div class="chat-input-wrapper">
                             <textarea class="chat-input" id="chatInput" rows="1"
-                                placeholder="Ask Claude anything about marketing…"
+                                placeholder="שאלו את Claude כל דבר על שיווק..."
                                 onkeydown="handleChatKeydown(event)"></textarea>
                             <button class="chat-send-btn" id="chatSendBtn" onclick="sendChatMessage()">
                                 ➤
                             </button>
                         </div>
-                        <div class="chat-hint">Press Enter to send · Shift + Enter for new line</div>
+                        <div class="chat-hint">Enter לשליחה · Shift + Enter לשורה חדשה</div>
                     </div>
 
                 </div>
@@ -1383,7 +1379,7 @@
             'tab2': '1777445560',  // Floor&Care
             'tab3': '2824213105'   // Marshanski Build
         };
-        let isSending = false;
+
 
         /* ───── Page Switching ────────────────────────────── */
         function switchPage(page) {
@@ -1732,6 +1728,10 @@
         function switchChatTab(tabId) {
             activeChatTab = tabId;
 
+            // Reset UI state for the new tab
+            showTyping(tabSending[tabId]);
+            document.getElementById('chatSendBtn').disabled = tabSending[tabId];
+
             // Update container theme class
             const container = document.getElementById('chatPageContainer');
             container.className = `chat-page theme-${tabId}`;
@@ -1757,13 +1757,13 @@
                 messages.innerHTML = `
                     <div class="chat-welcome" id="chatWelcome">
                         <div class="chat-welcome-icon">🤖</div>
-                        <h3>Chat with Claude AI - ${companyName}</h3>
-                        <p>Ask me anything about your marketing campaigns, ad strategy, performance analysis, or growth ideas for ${companyName}. I'm here to help!</p>
+                        <h3>צ'אט עם Claude AI - ${companyName}</h3>
+                        <p>שאלו אותי כל דבר על קמפיינים שיווקיים, אסטרטגיית פרסום, ניתוח ביצועים או רעיונות לצמיחה עבור ${companyName}. אני כאן לעזור!</p>
                         <div class="chat-suggestions">
-                            <button class="chat-suggestion-btn" onclick="useSuggestion('Analyze my ad performance')">📈 Analyze my ad performance</button>
-                            <button class="chat-suggestion-btn" onclick="useSuggestion('Suggest budget optimization strategies')">💰 Budget optimization</button>
-                            <button class="chat-suggestion-btn" onclick="useSuggestion('Write me a compelling ad copy for a lead generation campaign')">✍️ Write ad copy</button>
-                            <button class="chat-suggestion-btn" onclick="useSuggestion('What are the best practices for Google Ads in 2026?')">🚀 Best practices</button>
+                            <button class="chat-suggestion-btn" onclick="useSuggestion('נתח את ביצועי הפרסום שלי')">📈 ניתוח ביצועי פרסום</button>
+                            <button class="chat-suggestion-btn" onclick="useSuggestion('הצע אסטרטגיות לאופטימיזציה של תקציב')">💰 אופטימיזציית תקציב</button>
+                            <button class="chat-suggestion-btn" onclick="useSuggestion('כתוב לי קופי פרסומי משכנע לקמפיין לידים')">✍️ כתיבת קופי</button>
+                            <button class="chat-suggestion-btn" onclick="useSuggestion('מהן שיטות העבודה המומלצות בגוגל אדס ב-2026?')">🚀 שיטות מומלצות</button>
                         </div>
                     </div>`;
             } else {
@@ -1802,65 +1802,87 @@
         }
 
         /* ── Send message ─────────────────────────────────── */
+        // Per-tab sending state so tabs are fully independent
+        let tabSending = { 'tab1': false, 'tab2': false, 'tab3': false };
+
         async function sendChatMessage() {
             const input = document.getElementById('chatInput');
             const message = input.value.trim();
-            if (!message || isSending) return;
+            if (!message) return;
 
-            const currentTabAtSend = activeChatTab;
-            isSending = true;
+            // Capture everything for the current tab at the moment of sending
+            const tabAtSend = activeChatTab;
+
+            // Don't allow double-send on the SAME tab, but allow other tabs
+            if (tabSending[tabAtSend]) return;
+            tabSending[tabAtSend] = true;
+
             const sendBtn = document.getElementById('chatSendBtn');
             sendBtn.disabled = true;
 
-            // Show user message
+            // Show user message on the current DOM
             addMessage('user', message);
-            chatHistories[currentTabAtSend].push({ role: 'user', content: message });
+            chatHistories[tabAtSend].push({ role: 'user', content: message });
             input.value = '';
             input.style.height = 'auto';
 
-            // Show typing indicator
-            showTyping(true);
+            // Show typing indicator (only if still on this tab)
+            if (activeChatTab === tabAtSend) showTyping(true);
+
+            // Freeze the payload data from this tab
+            const payload = {
+                message: message,
+                conversation_id: chatConversationIds[tabAtSend],
+                google_ads_customer_ids: [chatGoogleAdsIds[tabAtSend]],
+                ga_property_id: chatProperties[tabAtSend]
+            };
 
             try {
-                const payload = {
-                    message: message,
-                    conversation_id: chatConversationIds[activeChatTab],
-                    google_ads_customer_ids: [chatGoogleAdsIds[activeChatTab]],
-                    ga_property_id: chatProperties[activeChatTab]
-                };
+                // Retry logic for transient Cloud Run cold-start failures
+                let lastError = null;
+                let data = null;
+                for (let attempt = 0; attempt < 3; attempt++) {
+                    try {
+                        const res = await fetch(`${API_BASE}/ai-chat`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                        data = await res.json();
+                        break; // Success — exit the retry loop
+                    } catch (e) {
+                        lastError = e;
+                        if (attempt < 2) await new Promise(r => setTimeout(r, 1500)); // Wait before retry
+                    }
+                }
+                if (!data) throw lastError;
 
-                const res = await fetch(`${API_BASE}/ai-chat`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                if (!res.ok) throw new Error(`HTTP ${res.status}`);
-                const data = await res.json();
-
-                showTyping(false);
-
-                // Only add message if the user hasn't switched tabs while waiting
-                // Alternatively, we could update the history but not the DOM if tab changed
-                // Here we just add it to history, and if it's still the active tab, it will render.
                 const reply = data.response || data.reply || data.message || 'No response received.';
 
-                chatHistories[activeChatTab].push({ role: 'assistant', content: reply });
+                // Always save to the correct tab's history
+                chatHistories[tabAtSend].push({ role: 'assistant', content: reply });
 
-                // If the user hasn't switched away, render it
-                if (activeChatTab === activeChatTab) { // Note: we need to capture the current activeChatTab at start of req
+                // Only update the DOM if the user is still on the same tab
+                if (activeChatTab === tabAtSend) {
+                    showTyping(false);
                     addMessage('ai', reply);
                 }
 
             } catch (err) {
-                showTyping(false);
-                addMessage('ai', `⚠️ **Error:** Could not reach the AI service. ${err.message}`);
-                // Don't push error to history so user can try again cleanly
+                // Only show error on screen if still on the same tab
+                if (activeChatTab === tabAtSend) {
+                    showTyping(false);
+                    addMessage('ai', `⚠️ **Error:** Could not reach the AI service. ${err.message}`);
+                }
             }
 
-            isSending = false;
-            sendBtn.disabled = false;
-            input.focus();
+            tabSending[tabAtSend] = false;
+            // Only re-enable the send button if we're still on this tab
+            if (activeChatTab === tabAtSend) {
+                sendBtn.disabled = false;
+                input.focus();
+            }
         }
 
         /* ── Keyboard handling ────────────────────────────── */
