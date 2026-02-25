@@ -1378,6 +1378,11 @@
             'tab2': '399938286', // Floor&Care
             'tab3': '274079753'  // Marshanski Build
         };
+        const chatGoogleAdsIds = {
+            'tab1': '4283707037',  // Euroline
+            'tab2': '1777445560',  // Floor&Care
+            'tab3': '2824213105'   // Marshanski Build
+        };
         let isSending = false;
 
         /* ───── Page Switching ────────────────────────────── */
@@ -1820,7 +1825,7 @@
                 const payload = {
                     message: message,
                     conversation_id: chatConversationIds[activeChatTab],
-                    include_google_ads: true,
+                    google_ads_customer_ids: [chatGoogleAdsIds[activeChatTab]],
                     ga_property_id: chatProperties[activeChatTab]
                 };
 
