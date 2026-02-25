@@ -1356,7 +1356,7 @@
 
             renderKPIs(filtered);
             renderTable(filtered);
-            renderBarChart();
+            renderBarChart(filtered);
             renderDoughnutChart(filtered);
         }
 
@@ -1435,11 +1435,11 @@
         }
 
         /* ───── Bar Chart: Spend by Account ───────────────── */
-        function renderBarChart() {
+        function renderBarChart(rows) {
             const accountSpend = {};
             const accountClicks = {};
             const accountConv = {};
-            activeCampaigns.forEach(r => {
+            rows.forEach(r => {
                 accountSpend[r.customer_name] = (accountSpend[r.customer_name] || 0) + r.cost;
                 accountClicks[r.customer_name] = (accountClicks[r.customer_name] || 0) + r.clicks;
                 accountConv[r.customer_name] = (accountConv[r.customer_name] || 0) + r.conversions;
