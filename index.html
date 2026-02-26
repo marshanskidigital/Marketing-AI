@@ -1412,6 +1412,11 @@
             'tab2': '1777445560',  // Floor&Care
             'tab3': '2824213105'   // Marshanski Build
         };
+        const chatGscUrls = {
+            'tab1': 'https://euroline.co.il/',
+            'tab2': 'http://f-care.co.il/',
+            'tab3': 'https://marshanski.com/'
+        };
 
 
         /* ───── Page Switching ────────────────────────────── */
@@ -1881,7 +1886,8 @@
                 conversation_id: chatConversationIds[tabAtSend],
                 google_ads_customer_ids: [chatGoogleAdsIds[tabAtSend]],
                 include_google_ads: true,
-                ga_property_id: chatProperties[tabAtSend]
+                ga_property_id: chatProperties[tabAtSend],
+                gsc_property_url: chatGscUrls[tabAtSend]
             };
             const fetchUrl = `${API_BASE}/ai-chat`;
             console.log('[AI Chat] Fetch URL:', fetchUrl);
