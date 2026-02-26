@@ -1417,6 +1417,11 @@
             'tab2': 'http://f-care.co.il/',
             'tab3': 'https://marshanski.com/'
         };
+        const chatGtmContainerPaths = {
+            'tab1': 'accounts/4702496311/containers/GTM-NCJ9SK9Z', // Euroline
+            'tab2': 'accounts/6001372225/containers/GTM-KBJBDZH',  // Floor&Care
+            'tab3': 'accounts/6330298232/containers/GTM-WHRJSH35'   // Marshanski Build
+        };
 
 
         /* ───── Page Switching ────────────────────────────── */
@@ -1887,7 +1892,8 @@
                 google_ads_customer_ids: [chatGoogleAdsIds[tabAtSend]],
                 include_google_ads: true,
                 ga_property_id: chatProperties[tabAtSend],
-                gsc_property_url: chatGscUrls[tabAtSend]
+                gsc_property_url: chatGscUrls[tabAtSend],
+                gtm_container_path: chatGtmContainerPaths[tabAtSend]
             };
             const fetchUrl = `${API_BASE}/ai-chat`;
             console.log('[AI Chat] Fetch URL:', fetchUrl);
