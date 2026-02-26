@@ -739,7 +739,7 @@
         .chat-tabs {
             display: flex;
             gap: 8px;
-            padding: 0 0 16px 0;
+            padding: 10px 0 16px 0;
             flex-shrink: 0;
             overflow-x: auto;
         }
@@ -749,6 +749,7 @@
         }
 
         .chat-tab-btn {
+            position: relative;
             padding: 8px 16px;
             border: 1px solid var(--border);
             background: var(--bg-card);
@@ -760,6 +761,34 @@
             transition: all .2s;
             white-space: nowrap;
             font-weight: 500;
+        }
+
+        .unread-badge {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            background: var(--accent-rose);
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            animation: bounceIn .3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes bounceIn {
+            0% {
+                transform: scale(0);
+            }
+
+            100% {
+                transform: scale(1);
+            }
         }
 
         .chat-tab-btn:hover {
@@ -1749,7 +1778,12 @@
             document.querySelectorAll('.chat-tab-btn').forEach(btn => {
                 btn.classList.remove('active');
             });
-            document.querySelector(`.chat-tab-btn[onclick="switchChatTab('${tabId}')"]`).classList.add('active');
+            const activeTabBtn = document.querySelector(`.chat-tab-btn[onclick="switchChatTab('${tabId}')"]`);
+            activeTabBtn.classList.add('active');
+
+            // Remove unread badge if present
+            const badge = activeTabBtn.querySelector('.unread-badge');
+            if (badge) badge.remove();
 
             // Clear messages area
             const messages = document.getElementById('chatMessages');
@@ -1905,6 +1939,15 @@
                     console.log(`[AI Chat] [${tabAtSend}] Message added to DOM (user on same tab)`);
                 } else {
                     console.log(`[AI Chat] [${tabAtSend}] Response saved to history (user switched to ${activeChatTab})`);
+
+                    // Add unread badge to the background tab
+                    const tabBtn = document.querySelector(`.chat-tab-btn[onclick="switchChatTab('${tabAtSend}')"]`);
+                    if (tabBtn && !tabBtn.querySelector('.unread-badge')) {
+                        const badge = document.createElement('div');
+                        badge.className = 'unread-badge';
+                        badge.textContent = '1';
+                        tabBtn.appendChild(badge);
+                    }
                 }
 
             } catch (err) {
