@@ -1730,7 +1730,7 @@
 
             // Reset UI state for the new tab
             showTyping(tabSending[tabId]);
-            document.getElementById('chatSendBtn').disabled = tabSending[tabId];
+            updateSendButton();
 
             // Update container theme class
             const container = document.getElementById('chatPageContainer');
@@ -1818,17 +1818,15 @@
             if (tabSending[tabAtSend]) return;
             tabSending[tabAtSend] = true;
 
-            const sendBtn = document.getElementById('chatSendBtn');
-            sendBtn.disabled = true;
-
-            // Show user message on the current DOM
+            // Show user message on the current DOM (we ARE on this tab right now)
             addMessage('user', message);
             chatHistories[tabAtSend].push({ role: 'user', content: message });
             input.value = '';
             input.style.height = 'auto';
 
-            // Show typing indicator
+            // Show typing indicator & disable send (only affects current visible tab)
             showTyping(true);
+            updateSendButton();
 
             // Freeze the payload data from this tab
             const payload = {
@@ -1849,7 +1847,7 @@
                 const retryDelay = 5000;
                 for (let attempt = 0; attempt < maxAttempts; attempt++) {
                     try {
-                        console.log(`[AI Chat] Attempt ${attempt + 1}/${maxAttempts} - fetching...`);
+                        console.log(`[AI Chat] [${tabAtSend}] Attempt ${attempt + 1}/${maxAttempts} - fetching...`);
                         const startTime = Date.now();
                         const controller = new AbortController();
                         const timeoutId = setTimeout(() => controller.abort(), 180000);
@@ -1862,25 +1860,19 @@
                         });
                         clearTimeout(timeoutId);
                         const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
-                        console.log(`[AI Chat] Response received in ${elapsed}s - status: ${res.status}`);
+                        console.log(`[AI Chat] [${tabAtSend}] Response received in ${elapsed}s - status: ${res.status}`);
                         if (!res.ok) {
                             const errBody = await res.text().catch(() => '');
                             throw new Error(`HTTP ${res.status}: ${errBody.substring(0, 200)}`);
                         }
                         data = await res.json();
-                        console.log('[AI Chat] Response data ok:', data.ok, 'has response:', !!data.response);
+                        console.log(`[AI Chat] [${tabAtSend}] Response data ok:`, data.ok);
                         break;
                     } catch (e) {
-                        const elapsed = ((Date.now() - (Date.now())) / 1000).toFixed(1);
-                        console.error(`[AI Chat] Attempt ${attempt + 1} failed:`, {
-                            message: e.message,
-                            name: e.name,
-                            type: e.constructor.name,
-                            stack: e.stack
-                        });
+                        console.error(`[AI Chat] [${tabAtSend}] Attempt ${attempt + 1} failed:`, e.message);
                         lastError = e;
                         if (attempt < maxAttempts - 1) {
-                            console.log(`[AI Chat] Retrying in ${retryDelay / 1000}s...`);
+                            console.log(`[AI Chat] [${tabAtSend}] Retrying in ${retryDelay / 1000}s...`);
                             await new Promise(r => setTimeout(r, retryDelay));
                         }
                     }
@@ -1888,33 +1880,48 @@
                 if (!data) throw lastError;
 
                 const reply = data.response || data.reply || data.message || 'No response received.';
-                console.log('[AI Chat] Reply length:', reply.length);
+                console.log(`[AI Chat] [${tabAtSend}] Reply length:`, reply.length);
 
+                // Always save to the correct tab's history
                 chatHistories[tabAtSend].push({ role: 'assistant', content: reply });
 
-                showTyping(false);
-                addMessage('ai', reply);
-                console.log('[AI Chat] Message added to DOM successfully');
+                // Only update DOM if user is still on the same tab
+                if (activeChatTab === tabAtSend) {
+                    showTyping(false);
+                    addMessage('ai', reply);
+                    console.log(`[AI Chat] [${tabAtSend}] Message added to DOM (user on same tab)`);
+                } else {
+                    console.log(`[AI Chat] [${tabAtSend}] Response saved to history (user switched to ${activeChatTab})`);
+                }
 
             } catch (err) {
-                console.error('[AI Chat] Final error:', err);
-                console.error('[AI Chat] Error details:', {
-                    message: err.message,
-                    name: err.name,
-                    type: err.constructor.name,
-                    stack: err.stack
-                });
-                showTyping(false);
+                console.error(`[AI Chat] [${tabAtSend}] Final error:`, err.message);
                 const isTimeout = err.name === 'AbortError';
                 const errorMsg = isTimeout
                     ? '⚠️ **Error:** The request took too long. The server may be restarting. Please try again.'
                     : `⚠️ **Error:** Could not reach the AI service. ${err.message}`;
-                addMessage('ai', errorMsg);
+
+                // Save error to history
+                chatHistories[tabAtSend].push({ role: 'assistant', content: errorMsg });
+
+                // Only update DOM if user is still on the same tab
+                if (activeChatTab === tabAtSend) {
+                    showTyping(false);
+                    addMessage('ai', errorMsg);
+                }
             }
 
             tabSending[tabAtSend] = false;
-            sendBtn.disabled = false;
-            input.focus();
+            updateSendButton();
+            if (activeChatTab === tabAtSend) {
+                input.focus();
+            }
+        }
+
+        /* ── Update send button based on active tab's state ── */
+        function updateSendButton() {
+            const sendBtn = document.getElementById('chatSendBtn');
+            sendBtn.disabled = tabSending[activeChatTab];
         }
 
         /* ── Keyboard handling ────────────────────────────── */
