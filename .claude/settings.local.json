@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -v --max-time 10 \"https://google-ads-api-44988665320.me-west1.run.app/\")"
+    ]
+  }
+}
