@@ -1838,53 +1838,78 @@
                 include_google_ads: true,
                 ga_property_id: chatProperties[tabAtSend]
             };
-            console.log('[AI Chat] Sending payload:', JSON.stringify(payload).substring(0, 200));
+            const fetchUrl = `${API_BASE}/ai-chat`;
+            console.log('[AI Chat] Fetch URL:', fetchUrl);
+            console.log('[AI Chat] Sending payload:', JSON.stringify(payload));
 
             try {
-                // Retry logic for transient Cloud Run cold-start failures
                 let lastError = null;
                 let data = null;
-                const retryDelays = [3000, 6000, 12000]; // Exponential backoff
-                for (let attempt = 0; attempt < 4; attempt++) {
+                const maxAttempts = 2;
+                const retryDelay = 5000;
+                for (let attempt = 0; attempt < maxAttempts; attempt++) {
                     try {
-                        console.log(`[AI Chat] Attempt ${attempt + 1}/4...`);
+                        console.log(`[AI Chat] Attempt ${attempt + 1}/${maxAttempts} - fetching...`);
+                        const startTime = Date.now();
                         const controller = new AbortController();
-                        const timeoutId = setTimeout(() => controller.abort(), 90000); // 90s timeout
-                        const res = await fetch(`${API_BASE}/ai-chat`, {
+                        const timeoutId = setTimeout(() => controller.abort(), 180000);
+                        const res = await fetch(fetchUrl, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(payload),
+                            mode: 'cors',
                             signal: controller.signal
                         });
                         clearTimeout(timeoutId);
-                        console.log(`[AI Chat] Response status: ${res.status}`);
-                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                        const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+                        console.log(`[AI Chat] Response received in ${elapsed}s - status: ${res.status}`);
+                        if (!res.ok) {
+                            const errBody = await res.text().catch(() => '');
+                            throw new Error(`HTTP ${res.status}: ${errBody.substring(0, 200)}`);
+                        }
                         data = await res.json();
                         console.log('[AI Chat] Response data ok:', data.ok, 'has response:', !!data.response);
-                        break; // Success — exit the retry loop
+                        break;
                     } catch (e) {
-                        console.error(`[AI Chat] Attempt ${attempt + 1} failed:`, e.message);
+                        const elapsed = ((Date.now() - (Date.now())) / 1000).toFixed(1);
+                        console.error(`[AI Chat] Attempt ${attempt + 1} failed:`, {
+                            message: e.message,
+                            name: e.name,
+                            type: e.constructor.name,
+                            stack: e.stack
+                        });
                         lastError = e;
-                        if (attempt < 3) await new Promise(r => setTimeout(r, retryDelays[attempt] || 12000));
+                        if (attempt < maxAttempts - 1) {
+                            console.log(`[AI Chat] Retrying in ${retryDelay / 1000}s...`);
+                            await new Promise(r => setTimeout(r, retryDelay));
+                        }
                     }
                 }
                 if (!data) throw lastError;
 
                 const reply = data.response || data.reply || data.message || 'No response received.';
-                console.log('[AI Chat] Reply length:', reply.length, 'first 100 chars:', reply.substring(0, 100));
+                console.log('[AI Chat] Reply length:', reply.length);
 
-                // Save to the correct tab's history
                 chatHistories[tabAtSend].push({ role: 'assistant', content: reply });
 
-                // Always update the DOM — hide typing and show the response
                 showTyping(false);
                 addMessage('ai', reply);
                 console.log('[AI Chat] Message added to DOM successfully');
 
             } catch (err) {
                 console.error('[AI Chat] Final error:', err);
+                console.error('[AI Chat] Error details:', {
+                    message: err.message,
+                    name: err.name,
+                    type: err.constructor.name,
+                    stack: err.stack
+                });
                 showTyping(false);
-                addMessage('ai', `⚠️ **Error:** Could not reach the AI service. ${err.message}`);
+                const isTimeout = err.name === 'AbortError';
+                const errorMsg = isTimeout
+                    ? '⚠️ **Error:** The request took too long. The server may be restarting. Please try again.'
+                    : `⚠️ **Error:** Could not reach the AI service. ${err.message}`;
+                addMessage('ai', errorMsg);
             }
 
             tabSending[tabAtSend] = false;
