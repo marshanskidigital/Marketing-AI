@@ -858,6 +858,8 @@
             border-top-left-radius: 4px;
             box-shadow: var(--shadow-card);
             color: var(--text-primary);
+            direction: rtl;
+            text-align: right;
         }
 
         .msg.user .msg-bubble {
@@ -924,7 +926,8 @@
 
         .msg.ai .msg-bubble ul,
         .msg.ai .msg-bubble ol {
-            padding-left: 20px;
+            padding-right: 20px;
+            padding-left: 0;
             margin: 8px 0;
         }
 
@@ -1721,7 +1724,12 @@
             `;
 
             messages.appendChild(msgDiv);
-            messages.scrollTop = messages.scrollHeight;
+            // Scroll so the top of the new message is visible
+            if (!isUser) {
+                msgDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+                messages.scrollTop = messages.scrollHeight;
+            }
         }
 
         /* ── Switch Chat Tab ──────────────────────────────── */
