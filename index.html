@@ -1834,6 +1834,7 @@
                 message: message,
                 conversation_id: chatConversationIds[tabAtSend],
                 google_ads_customer_ids: [chatGoogleAdsIds[tabAtSend]],
+                include_google_ads: true,
                 ga_property_id: chatProperties[tabAtSend]
             };
 
@@ -1841,19 +1842,24 @@
                 // Retry logic for transient Cloud Run cold-start failures
                 let lastError = null;
                 let data = null;
-                for (let attempt = 0; attempt < 3; attempt++) {
+                const retryDelays = [3000, 6000, 12000]; // Exponential backoff
+                for (let attempt = 0; attempt < 4; attempt++) {
                     try {
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), 90000); // 90s timeout
                         const res = await fetch(`${API_BASE}/ai-chat`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
+                            body: JSON.stringify(payload),
+                            signal: controller.signal
                         });
+                        clearTimeout(timeoutId);
                         if (!res.ok) throw new Error(`HTTP ${res.status}`);
                         data = await res.json();
                         break; // Success — exit the retry loop
                     } catch (e) {
                         lastError = e;
-                        if (attempt < 2) await new Promise(r => setTimeout(r, 1500)); // Wait before retry
+                        if (attempt < 3) await new Promise(r => setTimeout(r, retryDelays[attempt] || 12000));
                     }
                 }
                 if (!data) throw lastError;
