@@ -1915,7 +1915,7 @@
                         console.log(`[AI Chat] [${tabAtSend}] Attempt ${attempt + 1}/${maxAttempts} - fetching...`);
                         const startTime = Date.now();
                         const controller = new AbortController();
-                        const timeoutId = setTimeout(() => controller.abort(), 180000);
+                        const timeoutId = setTimeout(() => controller.abort(), 300000);
                         const res = await fetch(fetchUrl, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -1982,6 +1982,18 @@
                 if (activeChatTab === tabAtSend) {
                     showTyping(false);
                     addMessage('ai', errorMsg);
+                } else {
+                    console.log(`[AI Chat] [${tabAtSend}] Error saved to history (user switched to ${activeChatTab})`);
+
+                    // Add unread badge to the background tab to notify user of failure
+                    const tabBtn = document.querySelector(`.chat-tab-btn[onclick="switchChatTab('${tabAtSend}')"]`);
+                    if (tabBtn && !tabBtn.querySelector('.unread-badge')) {
+                        const badge = document.createElement('div');
+                        badge.className = 'unread-badge';
+                        badge.textContent = '!';
+                        badge.style.backgroundColor = '#ef4444'; // Red badge for errors
+                        tabBtn.appendChild(badge);
+                    }
                 }
             }
 
